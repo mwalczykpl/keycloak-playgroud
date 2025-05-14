@@ -1,0 +1,87 @@
+services:
+#  mysql:
+#    image: mysql:8.0
+#    container_name: mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${MYSQL_DATABASE}
+#      MYSQL_USER: ${MYSQL_USER}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#      MYSQL_KEYCLOAK_DATABASE: ${MYSQL_KEYCLOAK_DATABASE}
+#      MYSQL_KEYCLOAK_USER: ${MYSQL_KEYCLOAK_USER}
+#      MYSQL_KEYCLOAK_PASSWORD: ${MYSQL_KEYCLOAK_PASSWORD}
+#    command: --port=${MYSQL_PORT}
+#    ports:
+#      - "127.0.0.1:${MYSQL_PORT}:${MYSQL_PORT}"
+#    volumes:
+#      - mysql_data:/var/lib/mysql
+#      - ./mysql-init:/docker-entrypoint-initdb.d
+#    networks:
+#      - keycloak-playgroud
+#    healthcheck:
+#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#      interval: 5s
+#      timeout: 10s
+#      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.2
+    container_name: keycloak
+    command:
+      - "start-dev"
+      - "--http-port=8070"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+#      KC_DB: mysql
+#      KC_DB_URL: jdbc:mysql://mysql:3306/${MYSQL_KEYCLOAK_DATABASE}?allowPublicKeyRetrieval=true&useSSL=false
+#      KC_DB_USERNAME: ${MYSQL_KEYCLOAK_USER}
+#      KC_DB_PASSWORD: ${MYSQL_KEYCLOAK_PASSWORD}
+    ports:
+      - "8070:8070"
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+    networks:
+      - keycloak-playgroud
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8070;echo -e 'GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;" ]
+      start_period: 120s
+      interval: 30s
+      retries: 3
+      timeout: 5s
+
+  terraform:
+    image: hashicorp/terraform:latest
+    container_name: terraform
+    volumes:
+      - ./terraform:/terraform
+    environment:
+      TF_VAR_keycloak_url: ${TERRAFORM_KEYCLOAK_URL}
+      TF_VAR_keycloak_realm: ${KEYCLOAK_REALM}
+      TF_VAR_keycloak_admin: ${KEYCLOAK_ADMIN}
+      TF_VAR_keycloak_admin_password: ${KEYCLOAK_ADMIN_PASSWORD}
+      TF_VAR_keycloak_admin_client_id: ${KEYCLOAK_ADMIN_CLIENT_ID}
+      TF_VAR_keycloak_admin_client_secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+      TF_VAR_keycloak_client_id: ${KEYCLOAK_CLIENT_ID}
+      # MySQL credentials for Terraform
+      TF_VAR_db_host: ${MYSQL_HOST}
+      TF_VAR_db_port: ${MYSQL_PORT}
+      TF_VAR_db_root_user: root
+      TF_VAR_db_root_password: ${MYSQL_ROOT_PASSWORD}
+      TF_VAR_react_app_api_url: ${REACT_APP_API_URL}
+    working_dir: /terraform
+    entrypoint: >
+      sh -c "terraform init && terraform apply -auto-approve"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - keycloak-playgroud
+
+volumes:
+  mysql_data:
+
+networks:
+  keycloak-playgroud:
+    driver: bridge

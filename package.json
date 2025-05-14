@@ -1,0 +1,16 @@
+{
+  "name": "Keycloak-playground",
+  "version": "1.0.1",
+  "description": "Just a playground for testing Keycloak",
+  "scripts": {
+    "docker:build": "docker compose -f docker-compose.yaml build",
+    "docker:up": "docker compose -f docker-compose.yaml up -d",
+    "docker:down": "docker compose -f docker-compose.yaml down",
+    "docker:logs": "docker compose -f docker-compose.yaml logs -f",
+    "docker:restart": "docker compose -f docker-compose.yaml restart keycloak",
+    "docker:exec-giacom": "docker exec -it keycloak sh",
+    "docker:clean": "docker compose -f docker-compose.yaml down -v --rmi all --remove-orphans",
+    "docker:fresh": "npm run docker:clean && npm run docker:build && npm run docker:up",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

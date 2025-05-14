@@ -1,0 +1,26 @@
+# Terraform specific files
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Docker specific files
+*.env
+docker-compose.override.yml
+.dockerignore
+Dockerfile.*
+
+# General sensitive files
+*.key
+*.pem
+*.p12
+*.crt
+*.cer
+*.enc
